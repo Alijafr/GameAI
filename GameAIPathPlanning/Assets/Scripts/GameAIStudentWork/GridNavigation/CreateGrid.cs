@@ -54,7 +54,7 @@ namespace GameAICourse {
         {
             //TODO IMPLEMENT
             //add the -1 
-            if (minCellBounds.x <= p.x & maxCellBounds.x >= p.x & minCellBounds.y <= p.y  & maxCellBounds.y >= p.y)
+            if (minCellBounds.x <= p.x && maxCellBounds.x >= p.x && minCellBounds.y <= p.y  && maxCellBounds.y >= p.y)
             {
                 return true;
             }
@@ -139,32 +139,93 @@ namespace GameAICourse {
                     grid[i, j] = true;
                     foreach (Polygon obstacle in obstacles)
                     {
-                        Vector2 minBounds = new Vector2();
-                        Vector2 maxBounds = new Vector2();
+                        Vector2 minBounds = new Vector2();//botton left
+                        Vector2 maxBounds = new Vector2();//top right
                         minBounds.x = canvasOrigin.x + i * cellWidth;
-                        minBounds.y = canvasOrigin.y + i * cellWidth;
+                        minBounds.y = canvasOrigin.y + j * cellWidth;
                         maxBounds.x = minBounds.x + cellWidth;
                         maxBounds.y = minBounds.y + cellWidth;
+                        Vector2 topLeft = new Vector2();
+                        topLeft.x = minBounds.x;
+                        topLeft.y = minBounds.y + cellWidth;
+                        Vector2 bottomRight = new Vector2();
+                        bottomRight.x = minBounds.x + cellWidth;
+                        bottomRight.y = minBounds.y ;
 
-                        Vector2Int minBoundsInt = Convert(minBounds);
-                        Vector2Int maxBoundsInt = Convert(maxBounds);
+                        Vector2Int shrinkOne = new Vector2Int(1, 1); // used to shrink the bouding box by 1 unit 
+                        Vector2Int minBoundsInt = Convert(minBounds)- shrinkOne;
+                        Vector2Int maxBoundsInt = Convert(maxBounds)- shrinkOne;
+                        Vector2Int topLeftInt = Convert(topLeft)- shrinkOne;
+                        Vector2Int bottomRightInt = Convert(bottomRight)-shrinkOne;
+                        
+
                         Vector2[] pts = obstacle.getPoints();
-                        //Debug.Log("minBoundsInt: " + minBoundsInt);
-                        //Debug.Log("maxBoundsInt: " + maxBoundsInt);
-                        foreach (Vector2 pt in pts)
+                        //convert pts to int
+                        Vector2Int[] ptsInt = new Vector2Int[pts.Length];
+                        for (int m = 0; m < ptsInt.Length; m++)
                         {
-                            Vector2Int pt_int = Convert(pt);
-                            // Debug.Log("pt: " + pt_int);
-                            bool navigable = PointInsideBoundingBox(minBoundsInt, maxBoundsInt, pt_int);
-                            if (navigable == true)
-                            {
-                                Debug.Log("obstacle inside ");
-                                grid[i, j] = false;
-                                break;
-                            }
+                            ptsInt[m] = Convert(pts[m])- shrinkOne;
+                        }
+
+
+                        if (IsPointInsidePolygon(ptsInt, minBoundsInt))
+                        {
+                            grid[i, j] = false;
+                            break;
+                        }
+
+                        else if (IsPointInsidePolygon(ptsInt, maxBoundsInt))
+                        {
+                            grid[i, j] = false;
+                            break;
+                        }
+
+                        else if (IsPointInsidePolygon(ptsInt, topLeftInt))
+                        {
+                            grid[i, j] = false;
+                            break;
+                        }
+                        else if (IsPointInsidePolygon(ptsInt, bottomRightInt))
+                        {
+                            grid[i, j] = false;
+                            break;
                         }
                         
-                        
+
+                        else
+                        {
+                            //check if the polygon vertices are in the grid bounding box
+                            for ( int n = 0; n<pts.Length; n++)
+                            {
+                                Vector2Int pt_int = Convert(pts[n]);
+                                // Debug.Log("pt: " + pt_int);
+                                bool navigable = PointInsideBoundingBox(minBoundsInt, maxBoundsInt, pt_int);
+                                if (navigable == true)
+                                {
+                                    Debug.Log("obstacle inside ");
+                                    grid[i, j] = false;
+                                    break;
+                                }
+                                for (int l = 0; l < pts.Length; l++)
+                                {
+                                    //check for intersection for possible vertices
+                                    if (n != l) {
+                                        if (Intersects(topLeftInt, minBoundsInt, pt_int, Convert(pts[l])))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+
+                                        }
+                                }
+
+
+                
+
+                            }
+                        }
+
+
                     }
 
 
