@@ -13,7 +13,7 @@ namespace GameAICourse
     public class CreatePathNetwork
     {
 
-        public const string StudentAuthorName = "George P. Burdell ← Not your name, change it!";
+        public const string StudentAuthorName = "Ali Alrasheed";
 
 
 
@@ -83,7 +83,137 @@ namespace GameAICourse
 
             for (int i = 0; i < pathNodes.Count; ++i)
             {
-                pathEdges.Add(new List<int>());
+                //create an empty pathedge
+                List<int> pathEdge = new List<int>();
+
+                bool validnode = true;
+                foreach (Polygon obstacle in obstacles)
+                {
+                    Vector2Int[] ptsInt = obstacle.getIntegerPoints();
+                    //check if this node is inside of a obstacle
+                    if (IsPointInPolygon(ptsInt, Convert(pathNodes[i])))
+                    {
+                        validnode = false;
+                        break; //ignore the node
+                        
+                    }
+                    //make sure that the obstacle is not too close from the node
+                    for (int n = 0; n < ptsInt.Length; n++)
+                    {
+                        if (n == ptsInt.Length - 1)
+                        {
+                            if (DistanceToLineSegment(Convert(pathNodes[i]), ptsInt[0], ptsInt[n])<Convert(2 * agentRadius))
+                            {
+                                validnode = false;
+                                break;
+                            }
+                            //else if { }
+
+                        }
+                        else
+                        {
+                            if (DistanceToLineSegment(Convert(pathNodes[i]), ptsInt[0], ptsInt[n]) < Convert(2 * agentRadius))
+                            {
+                                validnode = false;
+                                break;
+                            }
+                        }
+
+                    }
+
+
+                }
+                //make sure the node is not outside of the grid
+                Vector2Int minBoundsInt = Convert(canvasOrigin);
+                Vector2Int offset = new Vector2Int(Convert(canvasWidth), Convert(canvasHeight));
+                Vector2Int maxBoundsInt = Convert(canvasOrigin) + offset;
+                //check if th point is inside the grid
+
+                if (Convert(pathNodes[i].x) < minBoundsInt.x || Convert(pathNodes[i].x) > maxBoundsInt.x || Convert(pathNodes[i].y) < minBoundsInt.y || Convert(pathNodes[i].y) > maxBoundsInt.y)
+                {
+                    //not valid node, continue
+                    validnode = false;
+                }
+
+                if (!validnode)
+                {
+                    //not valid node, continue
+                    pathEdges.Add(pathEdge);
+                    continue;
+                }
+                
+
+                for (int j = 0; j < pathNodes.Count; j++)
+                {
+                    bool validedge = true;
+                    //nodes should not connnect to itself
+                    if (i == j)
+                    {
+                        continue; 
+                    }
+
+                    if (Convert(pathNodes[j].x) < minBoundsInt.x || Convert(pathNodes[j].x) > maxBoundsInt.x || Convert(pathNodes[j].y) < minBoundsInt.y || Convert(pathNodes[j].y) > maxBoundsInt.y)
+                    {
+                        //not valid node, continue
+                        continue;
+                    }
+
+                    foreach (Polygon obstacle in obstacles)
+                    {
+                        Vector2Int[] ptsInt = obstacle.getIntegerPoints();
+                        //check if this pairing node is inside an obstacle 
+                        if (IsPointInPolygon(ptsInt, Convert(pathNodes[j])))
+                        {
+                            validedge = false;
+                            continue;
+                        }
+                        else
+                        {
+                            //check intercetion between these nodes and the the obstacle 
+                            for (int n = 0; n < ptsInt.Length; n++)
+                            {
+                                if (n == ptsInt.Length - 1)
+                                {
+                                    if (Intersects(Convert(pathNodes[i]), Convert(pathNodes[j]), ptsInt[0], ptsInt[n]))
+                                    {
+                                        validedge = false;
+                                        break;
+                                    }
+                                    else if (DistanceToLineSegment(Convert(pathNodes[j]), ptsInt[0], ptsInt[n]) < Convert(2*agentRadius))
+                                    {
+                                        validedge = false;
+                                        break;
+                                    }
+
+                                }
+                                else
+                                {
+                                    if (Intersects(Convert(pathNodes[i]), Convert(pathNodes[j]), ptsInt[n], ptsInt[n + 1]))
+                                    {
+                                        validedge = false;
+                                        break;
+                                    }
+                                    else if (DistanceToLineSegment(Convert(pathNodes[j]), ptsInt[0], ptsInt[n]) < Convert(2 * agentRadius))
+                                    {
+                                        validedge = false;
+                                        break;
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+                    if (validedge)
+                    {
+                        pathEdge.Add(j);
+                    }
+
+                }
+
+                pathEdges.Add(pathEdge);
+
+                
             }
 
 
