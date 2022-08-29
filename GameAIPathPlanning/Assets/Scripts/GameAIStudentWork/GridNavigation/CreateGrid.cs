@@ -95,7 +95,7 @@ namespace GameAICourse {
                 else if (dir == TraverseDirection.DownRight) { y -= 1; x += 1; }
 
                 //check if the new x and y is out of bound now
-                if (grid.GetLength(0) <= x | grid.GetLength(1) <= y)
+                if (x <0 | y<0| grid.GetLength(0) <= x | grid.GetLength(1) <= y)
                 {
                     return false;
                 }
@@ -126,7 +126,7 @@ namespace GameAICourse {
 
             // also ignoring the world boundary defined by canvasOrigin and canvasWidth and canvasHeight
 
-            Debug.Log(canvasOrigin);
+            
             int grid_size_x = Mathf.FloorToInt(canvasWidth / cellWidth);
             int grid_size_y = Mathf.FloorToInt(canvasHeight / cellWidth);
             
@@ -152,11 +152,14 @@ namespace GameAICourse {
                         bottomRight.x = minBounds.x + cellWidth;
                         bottomRight.y = minBounds.y ;
 
-                        Vector2Int shrinkOne = new Vector2Int(1, 1); // used to shrink the bouding box by 1 unit 
-                        Vector2Int minBoundsInt = Convert(minBounds)- shrinkOne;
-                        Vector2Int maxBoundsInt = Convert(maxBounds)- shrinkOne;
-                        Vector2Int topLeftInt = Convert(topLeft)- shrinkOne;
-                        Vector2Int bottomRightInt = Convert(bottomRight)-shrinkOne;
+                        Vector2Int shrinkOne_bottom_left = new Vector2Int(1, 1); // used to shrink the bottom left bouding box by 1 unit 
+                        Vector2Int shrinkOne_top_left = new Vector2Int(1, -1); // used to shrink the bottom left bouding box by 1 unit 
+                        Vector2Int shrinkOne_bottom_right = new Vector2Int(-1, 1); // used to shrink the bottom left bouding box by 1 unit 
+                        Vector2Int shrinkOne_top_right = new Vector2Int(-1, -1); // used to shrink the bottom left bouding box by 1 unit 
+                        Vector2Int minBoundsInt = Convert(minBounds)+ shrinkOne_bottom_left;
+                        Vector2Int maxBoundsInt = Convert(maxBounds)+ shrinkOne_top_right;
+                        Vector2Int topLeftInt = Convert(topLeft)+ shrinkOne_top_left;
+                        Vector2Int bottomRightInt = Convert(bottomRight)+ shrinkOne_bottom_right;
                         
 
                         Vector2[] pts = obstacle.getPoints();
@@ -164,7 +167,7 @@ namespace GameAICourse {
                         Vector2Int[] ptsInt = new Vector2Int[pts.Length];
                         for (int m = 0; m < ptsInt.Length; m++)
                         {
-                            ptsInt[m] = Convert(pts[m])- shrinkOne;
+                            ptsInt[m] = Convert(pts[m]);
                         }
 
 
@@ -192,35 +195,123 @@ namespace GameAICourse {
                         }
                         
 
-                        else
+                        else 
                         {
                             //check if the polygon vertices are in the grid bounding box
-                            for ( int n = 0; n<pts.Length; n++)
+                            for ( int n = 0; n< ptsInt.Length; n++)
                             {
-                                Vector2Int pt_int = Convert(pts[n]);
-                                // Debug.Log("pt: " + pt_int);
-                                bool navigable = PointInsideBoundingBox(minBoundsInt, maxBoundsInt, pt_int);
+                     
+                                bool navigable = PointInsideBoundingBox(minBoundsInt, maxBoundsInt, ptsInt[n]);
                                 if (navigable == true)
                                 {
-                                    Debug.Log("obstacle inside ");
                                     grid[i, j] = false;
                                     break;
                                 }
-                                for (int l = 0; l < pts.Length; l++)
+                               
+                            }
+                            //if no obstacle is still found 
+                            if (grid[i, j])
+                            {
+                                //check intercetion of topleft with minboundInt with ploygon ponits 
+                                for (int n = 0; n < ptsInt.Length; n++)
                                 {
-                                    //check for intersection for possible vertices
-                                    if (n != l) {
-                                        if (Intersects(topLeftInt, minBoundsInt, pt_int, Convert(pts[l])))
+                                    if (n == ptsInt.Length - 1)
+                                    {
+                                        if (Intersects(minBoundsInt, topLeftInt, ptsInt[0], ptsInt[n]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+                                       
+                                    }
+                                    else
+                                    {
+                                        if (Intersects(minBoundsInt, topLeftInt, ptsInt[n], ptsInt[n + 1]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+                                    }
+                                    
+                                }
+
+                            }
+
+                            if (grid[i, j])
+                            {
+                                //check intercetion of topleft with maxboundInt with ploygon ponits 
+                                for (int n = 0; n < ptsInt.Length; n++)
+                                {
+                                    if (n == ptsInt.Length - 1)
+                                    {
+                                        if (Intersects(maxBoundsInt, topLeftInt, ptsInt[0], ptsInt[n]))
                                         {
                                             grid[i, j] = false;
                                             break;
                                         }
 
+                                    }
+                                    else
+                                    {
+
+
+                                        if (Intersects(maxBoundsInt, topLeftInt, ptsInt[n], ptsInt[n + 1]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
                                         }
+                                    }
                                 }
 
+                            }
+                            if (grid[i, j])
+                            {
+                                //check intercetion of bottomright with minboundInt with ploygon ponits 
+                                for (int n = 0; n < ptsInt.Length; n++)
+                                {
+                                    if (n == ptsInt.Length - 1)
+                                    {
+                                        if (Intersects(minBoundsInt, bottomRightInt, ptsInt[0], ptsInt[n]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+                                        
+                                    }
+                                    else
+                                    {
+                                        if (Intersects(minBoundsInt, bottomRightInt, ptsInt[n], ptsInt[n + 1]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+                                    }
+                                }
 
-                
+                            }
+                            if (grid[i, j])
+                            {
+                                //check intercetion of bottonright with maxboundInt with ploygon ponits 
+                                for (int n = 0; n < ptsInt.Length; n++)
+                                {
+                                    if (n == ptsInt.Length - 1)
+                                    {
+                                        if (Intersects(maxBoundsInt, bottomRightInt, ptsInt[0], ptsInt[n]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+                                        
+                                    }
+                                    else
+                                    {
+                                        if (Intersects(maxBoundsInt, bottomRightInt, ptsInt[n], ptsInt[n + 1]))
+                                        {
+                                            grid[i, j] = false;
+                                            break;
+                                        }
+                                    }
+                                }
 
                             }
                         }
