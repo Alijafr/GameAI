@@ -78,7 +78,7 @@ namespace GameAICourse
         {
 
             //STUDENT CODE HERE
-
+            int agentRadiusInt = Convert(agentRadius);
             pathEdges = new List<List<int>>(pathNodes.Count);
 
             for (int i = 0; i < pathNodes.Count; ++i)
@@ -129,7 +129,12 @@ namespace GameAICourse
                 Vector2Int maxBoundsInt = Convert(canvasOrigin) + offset;
                 //check if th point is inside the grid
 
-                if (Convert(pathNodes[i].x) < minBoundsInt.x || Convert(pathNodes[i].x) > maxBoundsInt.x || Convert(pathNodes[i].y) < minBoundsInt.y || Convert(pathNodes[i].y) > maxBoundsInt.y)
+                //get the 4 verteces of the
+                Vector2Int topEdgeInt_i = Convert(pathNodes[i]) + new Vector2Int(0, agentRadiusInt);
+                Vector2Int rightEdgeInt_i = Convert(pathNodes[i]) + new Vector2Int(agentRadiusInt, 0);
+                Vector2Int leftEdgeInt_i = Convert(pathNodes[i]) + new Vector2Int(-agentRadiusInt, 0);
+                Vector2Int bottomEdgeInt_i = Convert(pathNodes[i]) + new Vector2Int(0, -agentRadiusInt);
+                if (leftEdgeInt_i.x < minBoundsInt.x || rightEdgeInt_i.x > maxBoundsInt.x || bottomEdgeInt_i.y < minBoundsInt.y || topEdgeInt_i.y > maxBoundsInt.y)
                 {
                     //not valid node, continue
                     validnode = false;
@@ -151,8 +156,12 @@ namespace GameAICourse
                     {
                         continue; 
                     }
-
-                    if (Convert(pathNodes[j].x) < minBoundsInt.x || Convert(pathNodes[j].x) > maxBoundsInt.x || Convert(pathNodes[j].y) < minBoundsInt.y || Convert(pathNodes[j].y) > maxBoundsInt.y)
+                    //get the 4 verteces of the
+                    Vector2Int topEdgeInt = Convert(pathNodes[j]) + new Vector2Int(0, agentRadiusInt);
+                    Vector2Int rightEdgeInt = Convert(pathNodes[j]) + new Vector2Int(agentRadiusInt,0);
+                    Vector2Int leftEdgeInt = Convert(pathNodes[j]) + new Vector2Int(-agentRadiusInt, 0);
+                    Vector2Int bottomEdgeInt = Convert(pathNodes[j]) + new Vector2Int(0, -agentRadiusInt);
+                    if (leftEdgeInt.x < minBoundsInt.x || rightEdgeInt.x > maxBoundsInt.x || bottomEdgeInt.y < minBoundsInt.y || topEdgeInt.y > maxBoundsInt.y)
                     {
                         //not valid node, continue
                         continue;
@@ -179,7 +188,12 @@ namespace GameAICourse
                                         validedge = false;
                                         break;
                                     }
-                                    else if (DistanceToLineSegment(Convert(pathNodes[j]), ptsInt[0], ptsInt[n]) < Convert(2*agentRadius))
+                                    else if (DistanceToLineSegment(Convert(pathNodes[j]), ptsInt[0], ptsInt[n]) < Convert(agentRadius))
+                                    {
+                                        validedge = false;
+                                        break;
+                                    }
+                                    else if (DistanceToLineSegment(ptsInt[n],Convert(pathNodes[j]),Convert(pathNodes[i])) < Convert(agentRadius))
                                     {
                                         validedge = false;
                                         break;
@@ -194,6 +208,11 @@ namespace GameAICourse
                                         break;
                                     }
                                     else if (DistanceToLineSegment(Convert(pathNodes[j]), ptsInt[0], ptsInt[n]) < Convert(2 * agentRadius))
+                                    {
+                                        validedge = false;
+                                        break;
+                                    }
+                                    else if (DistanceToLineSegment(ptsInt[n], Convert(pathNodes[j]), Convert(pathNodes[i])) < Convert(agentRadius))
                                     {
                                         validedge = false;
                                         break;
