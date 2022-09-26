@@ -1,5 +1,4 @@
-﻿// compile_check
-// Remove the line above if you are subitting to GradeScope for a grade. But leave it if you only want to check
+﻿// Remove the line above if you are subitting to GradeScope for a grade. But leave it if you only want to check
 // that your code compiles and the autograder can access your public methods.
 
 using System.Collections;
@@ -14,7 +13,7 @@ namespace GameAICourse
     public class CreateNavMesh
     {
 
-        public static string StudentAuthorName = "George P. Burdell ← Not your name, change it!";
+        public static string StudentAuthorName = "Ali Alrasheed";
 
 
 
@@ -93,6 +92,59 @@ namespace GameAICourse
         {
             return CG.CheckForConvexity(poly);
         }
+
+        public static bool ObstacleVerticesOnEdge(Vector2Int V1, Vector2Int V2, List<Polygon> polys){
+
+            foreach (var obstacleV in polys){
+                Vector2Int[] obstaclePointsInt =obstacleV.getIntegerPoints();
+                foreach ( var pntInt in obstaclePointsInt){
+                    if (pntInt == V1 || pntInt == V2){
+                        //ignore if the points is actually v1 or v2 (same point, will yields true in between function)
+                        continue;
+                    }
+                    
+                    if (Between(V1,V2,pntInt)){
+                        return true;
+                    }
+                }
+                                
+            }
+            return false; //if it passed all the tests  
+        }
+
+        public static bool ObstacleVerticesEnclosed(Polygon tri, List<Polygon> polys)
+        {
+            Vector2Int[] triPointInts = tri.getIntegerPoints();
+            foreach (var obstacleV in polys)
+            {
+                Vector2Int[] obstaclePointsInt = obstacleV.getIntegerPoints();
+                foreach (var pntInt in obstaclePointsInt)
+                {
+                    if (IsPointInsidePolygon(triPointInts, pntInt))
+                    {
+                        return true;
+                    }
+                }
+
+            }
+            return false; //if it passed all the tests  
+        }
+
+        public static bool ObstacleVerticesEquality(Polygon tri, List<Polygon> polys)
+        {
+            foreach (var poly in polys)
+            {
+                if (tri.Equals(poly))
+                {
+                    return true;
+                }
+            }
+            return false; //if it passed all the tests  
+        }
+
+        
+
+
 
 
 
@@ -230,7 +282,9 @@ namespace GameAICourse
                         // TODO first lets check if the candidate triangle
                         // is NOT degenerate. Use IsCollinear(), if
                         // it is then just call continue to go to the next tri
-
+                        if (IsCollinear(V1,V2,V3)){
+                            continue;
+                        }
                         // TODO The next part is potentially a little tricky to understand,
                         // but easy to implement. Many of the edges of the triangles
                         // you form will be adjacent to obstacles. 
@@ -255,17 +309,45 @@ namespace GameAICourse
                         // Use Between() to test each obstacle vertex against the candidate
                         // triangle edge. This test is important to get right because
                         // it will stop triangles from forming that block adjacencies from forming.
+                        bool line12 = IsLineSegmentInPolygons(V1,V2,offsetObstPolys);
+                        bool line13 = IsLineSegmentInPolygons(V1,V3,offsetObstPolys);
+                        bool line23 = IsLineSegmentInPolygons(V2,V3,offsetObstPolys);
+
+                        if (!line12){
+                            if (ObstacleVerticesOnEdge(V1,V2,offsetObstPolys)){
+                                continue;
+                            }
+                        }
+                        if (!line13){
+                            if (ObstacleVerticesOnEdge(V1,V3,offsetObstPolys)){
+                                continue;
+                            }
+                        }
+                        if (!line23){
+                            if (ObstacleVerticesOnEdge(V2,V3,offsetObstPolys)){
+                                continue;
+                            }
+                        }
 
                         // TODO If the tri candidate has gotten this far, now create
                         // a new Polygon from your tri points. Also, we need to make sure
                         // all tris are consistent ordering. So call IsCCW(). If it's 
                         // NOT then call tri.Reverse() to fix it.
+                        Polygon tri = new Polygon();
+                        tri.SetIntegerPoints(new Vector2Int[] { V1, V2, V3 });
+                        if (!IsCCW(tri.getIntegerPoints())){
+                            tri.Reverse();
+                        }
 
                         // TODO Next, check if your new tri overlaps the other tris you
                         // have added so far. You will be adding valid tris to origTriangles.
                         // So, Use IntersectsConvexPolygons()
                         // If there is an overlap then call continue. Note that IntersectsConvexPolygons
                         // will not return true if the triangles are only touching.
+                        if (IntersectsConvexPolygons(tri, origTriangles))
+                        {
+                            continue;
+                        }
 
                         // TODO After that, you want to see if your new tri encloses any
                         // obstacleVertices. Use IsPointInsidePolygon() to accomplish this.
@@ -277,6 +359,19 @@ namespace GameAICourse
                         // NOTE both of these are very rare tests to be successful.
                         // You can temporarily skip it and come back later if you want.
 
+                        if (ObstacleVerticesEnclosed(tri, offsetObstPolys))
+                        {
+                            continue;
+                        }
+
+                        if (ObstacleVerticesEquality(tri, offsetObstPolys))
+                        {
+                            continue;
+                        }
+
+                        
+
+
                         // TODO you now want to see if your new tri edges intersect
                         // with any of the obstacle edges. However, we can avoid 
                         // testing a tri edge that is exactly the same as an obstacle edge for
@@ -286,12 +381,37 @@ namespace GameAICourse
                         // InteriorIntersectionLineSegmentWithPolygons(). If this test intersects,
                         // this skip the tri by calling continue.
 
+                        if (!line12)
+                        {
+                            if (InteriorIntersectionLineSegmentWithPolygons(V1, V2, offsetObstPolys))
+                            {
+                                continue;
+                            }
+                        }
+                        if (!line13)
+                        {
+                            if (InteriorIntersectionLineSegmentWithPolygons(V1, V3, offsetObstPolys))
+                            {
+                                continue;
+                            }
+                        }
+                        if (!line23)
+                        {
+                            if (InteriorIntersectionLineSegmentWithPolygons(V2, V3, offsetObstPolys))
+                            {
+                                continue;
+                            }
+                        }
+
 
                         // TODO If the triangle has survived this far, add it to 
                         // origTriangles.
                         // Also, add it to the adjPolys dictionary with AddPolygon() (not
                         // Add()). Internally, AddPolygon() is fairly complicated
                         // as it tracks shared edges between polys
+
+                        origTriangles.Add(tri);
+                        adjPolys.AddPolygon(tri);
 
                     } // for
                 } // for
@@ -309,7 +429,6 @@ namespace GameAICourse
             // Also, navmeshPolygons is initially just the tris. Those are visualized 
             // as a blue outline. Note that the blue lineweight is very thin for better 
             // debugging of small polys
-
 
             // ********************* PHASE II - Merge Triangles *****************************
             // 
@@ -351,6 +470,56 @@ namespace GameAICourse
             // and add the new poly to navMeshPolygons.
             // When your loop is finished, don't forget to set adjPolys to newAdjPolys.
 
+
+            while (true)
+            {
+                //create a copy of the adjPolys
+                AdjacentPolygons newAdjPolys = new AdjacentPolygons(adjPolys);
+                //loop until no more polygon can be merged
+
+                bool merged = false;
+                foreach (var commonPolys in adjPolys)
+                {
+                    //adjPolys is dict with key as the commonEdge and value as common ploys
+                    CommonPolygons shaered_ploys = commonPolys.Value;
+                    //get the common edge
+                    CommonPolygonEdge commonEdge = commonPolys.Key;
+                    //make sure that the edge is not a boundary --> edge AB==BA and not null
+                    if (!shaered_ploys.IsBarrier)
+                    {
+                        Polygon ab = shaered_ploys.AB;
+                        Polygon ba = shaered_ploys.BA;
+
+                        //merge the two ploys
+                        Polygon merged_poly = MergePolygons(ab, ba, commonEdge.A, commonEdge.B);
+                        //check if the new poly is valid, if yes add it
+                        if (IsConvex(merged_poly.getIntegerPoints()))
+                        {
+                            //this will remove both edge and ploys (remember that this is a dict with key as common edge and value as common polys)
+                            newAdjPolys.Remove(commonEdge);
+                            //add the new merged poly
+                            newAdjPolys.AddPolygon(merged_poly, ab, ba);
+                            //update to navMeshPolygons
+                            navmeshPolygons.Remove(ab);
+                            navmeshPolygons.Remove(ba);
+                            navmeshPolygons.Add(merged_poly);
+                            merged = true;
+
+                        }
+
+                    }
+
+                }
+                //now update adjPolys 
+                adjPolys = newAdjPolys;
+                //this is probably not needed but to to double check that it is not possible to merge polys further
+                if (!merged)
+                {
+                    break;
+                }
+
+            }
+
             // TODO At this point you can visualize a single pass of the merging (e.g. test your
             // code). After that, wrap it all in a loop that tries successive passes of
             // merges, tracking how many successful merges occur. Your loop should terminate
@@ -385,7 +554,47 @@ namespace GameAICourse
             // is very slow. It can be sped up a good bit by creating hashtables of common calculations. 
             // Also, there are better ways to triangulate that perform better and give
             // better quality triangles (not long and skinny but closer to equilateral).
-            // 
+            //
+
+         
+
+            Dictionary<Polygon, int> mapPloyToIndix = new Dictionary<Polygon, int>();
+            for ( int i=0; i < navmeshPolygons.Count; i++)
+            {
+                //get the polygon
+                Polygon poly = navmeshPolygons[i];
+                //calculate the centroid and the centroid as the path node 
+                pathNodes.Add(poly.GetCentroid());
+                //create the suggested dict
+                mapPloyToIndix[poly] = i;
+                //created the suggested empty list for pathedges
+                pathEdges.Add(new List<int>());
+
+            }
+
+            foreach (var commonPolys in adjPolys)
+            {
+                //adjPolys is dict with key as the commonEdge and value as common ploys
+                CommonPolygons shaered_ploys = commonPolys.Value;
+                //get the common edge
+                CommonPolygonEdge commonEdge = commonPolys.Key;
+
+                if (!shaered_ploys.IsBarrier)
+                {
+                    //get the two ploys
+                    Polygon ab = shaered_ploys.AB;
+                    Polygon ba = shaered_ploys.BA;
+                    //get these poly indix from the dict
+                    int ab_indix = mapPloyToIndix[ab];
+                    int ba_indix = mapPloyToIndix[ba];
+                    //update the nodeege list
+                    pathEdges[ab_indix].Add(ba_indix); //add opposite edge (path to second common node)
+                    pathEdges[ba_indix].Add(ab_indix);
+
+
+                }
+
+            }
 
         } // Create()
 
